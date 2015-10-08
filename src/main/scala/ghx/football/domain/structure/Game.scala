@@ -1,17 +1,14 @@
 package ghx.football.domain.structure
 
-import ghx.football.domain.flow.GameHistory
+import ghx.football.domain.flow.{Pass, Move, GameHistory}
 
-case class Game(field: Field, moveCounter: Int = 0, state: GameHistory = GameHistory()) {
-  
-  def start() = {
-    require(moveCounter == 0, "Cannot start in the middle")
-    ???
-    nextMove()
+case class Game(field: Field, history: GameHistory) {
+  def possibleMoves: Seq[Move] = {
+    Seq(Move(Seq(Pass(Location(0, 0), Location(1, 1)))))
   }
-  
-  def nextMove(): Game = {
-    ???
-    copy(moveCounter = moveCounter + 1)
-  }
+  def +(move: Move) = copy(history = history + move)
+}
+
+object Game {
+  def newGame(field: Field) = Game(field, GameHistory.beginning)
 }

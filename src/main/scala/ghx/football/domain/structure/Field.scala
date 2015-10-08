@@ -1,6 +1,6 @@
 package ghx.football.domain.structure
 
-import ghx.football.domain.flow.Move
+import ghx.football.domain.flow.Pass
 
 case class Field(width: Int, height: Int) {
   require(width >= 2, "Width has to be bigger than 2 because goal width 2")
@@ -9,7 +9,7 @@ case class Field(width: Int, height: Int) {
   require(height >= 2, "Height has to be bigger than 2 because goals shouldn't be at starting location")
   require(height %2 == 0, "Height should be an even number for fair play and symmetrical field")
 
-  def availableMovesFromLocation(location: Location): Seq[Move] = ???
+  def availableMovesFromLocation(location: Location): Seq[Pass] = ???
 
   val aspect = height / width
 }
