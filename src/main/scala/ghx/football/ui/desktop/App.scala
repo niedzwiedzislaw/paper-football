@@ -7,7 +7,7 @@ import javafx.scene.control.Label
 import javafx.scene.layout.StackPane
 import javafx.stage.Stage
 
-import ghx.football.domain.structure.{Direction, Player, PairOfPlayers, Session, Field}
+import ghx.football.domain.structure.{GameLost, GameWon, Direction, Player, PairOfPlayers, Session, Field}
 import ghx.football.logging.Logging
 import org.slf4j.helpers.BasicMarkerFactory
 
@@ -22,11 +22,16 @@ class App extends Application with Logging {
     val view = new SessionView(session)
     new Thread(new Runnable() {
       def run(): Unit = {
-        while (true) {
+        var done = false
+        while (!done) {
           Platform.runLater(new Runnable() {
             def run(): Unit = {
               view.session = view.session.advance()
               view.draw()
+              view.session.game match {
+                case GameWon(_, _, _) | GameLost(_, _, _)  => done = true
+                case _ =>
+              }
             }
           })
           Thread.sleep(1000)

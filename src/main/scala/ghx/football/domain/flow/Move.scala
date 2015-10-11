@@ -1,12 +1,15 @@
 package ghx.football.domain.flow
 
-import ghx.football.domain.structure.{MoveResult, Direction, PassChain}
+import ghx.football.domain.structure.{Loss, Win, MoveResult, Direction, PassChain}
 
 case class Move(direction: Direction, result: MoveResult, passChain: PassChain) {
   def +(move: Move) = {
     require(this.direction == move.direction, "Cannot merge moves in different directions")
     copy(result = move.result, passChain = this.passChain ++ move.passChain)
   }
+
+  def isWinning = result == Win
+  def isLosing = result == Loss
 
   /**
    * @param passChains collection of moves to append

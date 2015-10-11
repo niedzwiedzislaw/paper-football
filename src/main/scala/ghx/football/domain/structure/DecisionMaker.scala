@@ -2,6 +2,10 @@ package ghx.football.domain.structure
 
 import ghx.football.domain.flow.{Move, Pass, GameHistory}
 
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Future, Await}
+import scala.concurrent.ExecutionContext.Implicits.global
+
 case class DecisionMaker(field: Field, previousPasses: PassChain) {
 
   private def lastLocation = previousPasses.map(_.to).lastOption.getOrElse(Rules.startingLocation)
@@ -11,7 +15,7 @@ case class DecisionMaker(field: Field, previousPasses: PassChain) {
     locations <- List(pass.to)
   } yield locations)
 
-  private def possibleBeginnings: Seq[Pass] = {
+  def possibleBeginnings: Seq[Pass] = {
     val theoreticalPasses = for {
       x <- -1 to 1
       y <- -1 to 1 if x != 0 || y != 0
@@ -31,12 +35,14 @@ case class DecisionMaker(field: Field, previousPasses: PassChain) {
   }
 
   def possibleMoves: Seq[PassChain] = {
-    for {
-      pass <- possibleBeginnings
-      continuedChains <- possibleContinuations(pass)
-    } yield {
-      pass + continuedChains
-    }
+    Await.result(Future{
+      for {
+        pass <- possibleBeginnings
+        continuedChains <- possibleContinuations(pass)
+      } yield {
+        pass + continuedChains
+      }
+    }, Duration("300s"))
   }
 
   def +(pass: Pass) = copy(previousPasses = previousPasses :+ pass)
