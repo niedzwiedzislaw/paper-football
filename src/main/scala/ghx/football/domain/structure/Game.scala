@@ -1,14 +1,56 @@
 package ghx.football.domain.structure
 
-import ghx.football.domain.flow.{Pass, Move, GameHistory}
+import ghx.football.domain.flow.{GameHistory, Move, Pass}
 
-case class Game(field: Field, history: GameHistory) {
-  def possibleMoves: Seq[Move] = {
-    Seq(Move(Seq(Pass(Location(0, 0), Location(1, 1)))))
-  }
-  def +(move: Move) = copy(history = history + move)
+sealed trait Game {
+  def field: Field
+
+  def history: GameHistory
+
+  def possibleMoves(direction: Direction): Seq[Move]
+
+  def +(move: Move): Game
 }
 
-object Game {
-  def newGame(field: Field) = Game(field, GameHistory.beginning)
+case class NewGame(field: Field) extends Game {
+  val history = GameHistory.beginning
+
+  def possibleMoves(direction: Direction): Seq[Move] = GameInProgress(field, GameHistory.beginning).possibleMoves(direction)
+
+  def +(move: Move): Game = GameInProgress(field, GameHistory.beginning) + move
+}
+
+case class GameInProgress(field: Field, history: GameHistory) extends Game {
+
+  def possibleMoves(direction: Direction): Seq[Move] = {
+    for {
+      passChain <- DecisionMaker(field, history.passes).possibleMoves
+    } yield Move(direction, predictPassResult(passChain), passChain)
+  }
+
+  def +(move: Move) = copy(history = history + move)
+
+  def predictPassResult(pass: PassChain) = {
+    if (isWinningPass(pass)) {
+      Win
+    } else if (isLosingPass(pass)) {
+      Loss
+    } else {
+      Continuation
+    }
+  }
+
+  def isWinningPass(pass: PassChain) = {
+    field.isWinningPass(pass.last)
+  }
+
+  def isLosingPass(pass: PassChain) = {
+    field.isLosingPass(pass.last)
+  }
+}
+
+case class GameFinished(winner: Player, field: Field, history: GameHistory) extends Game {
+  def possibleMoves(direction: Direction): Seq[Move] = Seq.empty
+
+  def +(move: Move): Game = this
 }

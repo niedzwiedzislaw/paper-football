@@ -1,10 +1,11 @@
 package ghx.football.ui.desktop
 
 import ghx.football.domain.flow.GameHistory
-import ghx.football.domain.structure.{Field, Session}
+import ghx.football.domain.structure.{Location, Field, Session}
 
 import scalafx.beans.property.DoubleProperty
 import scalafx.scene.canvas.Canvas
+import scalafx.scene.image.Image
 import scalafx.scene.paint.Color
 import scalafx.scene.shape.Rectangle
 
@@ -17,6 +18,7 @@ class SessionView(var session: Session) extends Canvas(600, 400) {
   def history = session.game.history
 
   def draw(): Unit = {
+    graphicsContext2D.clearRect(0, 0, width, height)
     graphicsContext2D.stroke = Color(0, 0, 0, 1)
     graphicsContext2D.lineWidth = 2
 
@@ -29,32 +31,32 @@ class SessionView(var session: Session) extends Canvas(600, 400) {
     val halfHeight = field.height / 2
     val halfWidth = field.width / 2
 
-    val points = Seq(
-      (center._1 - halfHeight * fieldUnit, center._2 - halfHeight * fieldUnit), // top left
-      (center._1 - halfHeight * fieldUnit, center._2 + halfHeight * fieldUnit), // bottom left
-      (center._1 - fieldUnit, center._2 + halfHeight * fieldUnit),
-      (center._1 - fieldUnit, center._2 + (1 + halfHeight) * fieldUnit),
-      (center._1 + fieldUnit, center._2 + (1 + halfHeight) * fieldUnit),
-      (center._1 + fieldUnit, center._2 + halfHeight * fieldUnit),
-      (center._1 + halfHeight * fieldUnit, center._2 + halfHeight * fieldUnit), // bottom right
-      (center._1 + halfHeight * fieldUnit, center._2 - halfHeight * fieldUnit), // top right
-      (center._1 + fieldUnit, center._2 - halfHeight * fieldUnit),
-      (center._1 + fieldUnit, center._2 - (1 + halfHeight) * fieldUnit),
-      (center._1 - fieldUnit, center._2 - (1 + halfHeight) * fieldUnit),
-      (center._1 - fieldUnit, center._2 - halfHeight * fieldUnit)
+    val points = List(
+      τ(field.left, field.bottom), // bottom left
+      τ(field.left, field.top), // top left
+      τ(-1, field.top),
+      τ(-1, field.top + 1),
+      τ(1, field.top + 1),
+      τ(1, field.top),
+      τ(field.right, field.top), // top right
+      τ(field.right, field.bottom), // bottom right
+      τ(1, field.bottom),
+      τ(1, field.bottom - 1),
+      τ(-1, field.bottom - 1),
+      τ(-1, field.bottom)
     )
 
-    graphicsContext2D.lineWidth = 2
+    graphicsContext2D.lineWidth = 3
     graphicsContext2D.stroke = Color.hsb(0, 0, 0)
 
     graphicsContext2D.strokeLine(points.head._1, points.head._2, points(1)._1, points(1)._2)
     for (point <- points.tail) {
       graphicsContext2D.lineTo(point._1, point._2)
     }
+    graphicsContext2D.lineTo(points.head._1, points.head._2)
     graphicsContext2D.strokePath()
-    graphicsContext2D.strokeLine(points.last._1, points.last._2, points.head._1, points.head._2)
 
-    graphicsContext2D.lineWidth = 1
+    graphicsContext2D.lineWidth = 0.5
     graphicsContext2D.stroke = Color.hsb(0, 0, 0, 0.2)
 
     for (x <- (center._1 - halfHeight * fieldUnit) to (center._1 + halfHeight * fieldUnit) by fieldUnit) {
@@ -66,10 +68,8 @@ class SessionView(var session: Session) extends Canvas(600, 400) {
 
     for (y <- (center._2 - halfHeight * fieldUnit) to (center._2 + halfHeight * fieldUnit) by fieldUnit) {
       if (y == center._2) {
-        graphicsContext2D.lineWidth = 1
         graphicsContext2D.stroke = Color.hsb(0, 0, 0, 0.4)
         graphicsContext2D.strokeLine(center._1 - halfHeight * fieldUnit, y, center._1 + halfHeight * fieldUnit, y)
-        graphicsContext2D.lineWidth = 1
         graphicsContext2D.stroke = Color.hsb(0, 0, 0, 0.2)
       } else
         graphicsContext2D.strokeLine(center._1 - halfHeight * fieldUnit, y, center._1 + halfHeight * fieldUnit, y)
@@ -78,17 +78,18 @@ class SessionView(var session: Session) extends Canvas(600, 400) {
 
   def draw(history: GameHistory): Unit = {
     graphicsContext2D.lineWidth = 2
-    graphicsContext2D.stroke = Color.hsb(0, 0.6, 0.4)
-    
+
+    val colors = List(Color.hsb(0, 0.6, 0.8), Color.hsb(120, 0.6, 0.8)).toStream
+    val colorsStream = Iterator.continually(colors).flatten
+
     history.moves.foreach {
-      move => move.passes.foreach {
+      move => move.passChain.foreach {
+        graphicsContext2D.stroke = colorsStream.next()
         pass =>
-          graphicsContext2D.strokeLine(
-            center._1 + fieldUnit * pass.from.x, center._2 + fieldUnit * pass.from.y,
-            center._1 + fieldUnit * pass.to.x, center._2 + fieldUnit * pass.to.y
-          )
+          graphicsContext2D.strokeLine(τx(pass.from), τy(pass.from), τx(pass.to), τy(pass.to))
       }
     }
+    graphicsContext2D.drawImage(new Image("/football.png"), τx(history.lastLocation)-5, τy(history.lastLocation)-5, 11, 11)
   }
 
 
@@ -114,6 +115,13 @@ class SessionView(var session: Session) extends Canvas(600, 400) {
       fieldUnit * field.height
     )
   }
+
+  def τ(location: Location) = (τx(location.x), τy(location.y))
+  def τ(x: Int, y: Int) = (τx(x), τy(y))
+  def τx(x: Int) = center._1 + fieldUnit * x
+  def τy(y: Int) = center._2 + fieldUnit * y
+  def τx(location: Location) = center._1 + fieldUnit * location.x
+  def τy(location: Location) = center._2 + fieldUnit * location.y
 }
 
 object SessionView {
