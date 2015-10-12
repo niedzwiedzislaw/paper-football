@@ -26,7 +26,7 @@ case class Player(name: String, direction: Direction) {
     val n = possibilities.filterNot(_.isLosing)
       .groupBy(_.passChain.last)
       .values
-      .map(_.head)
+      .map(_.maxBy(_.passChain.length))
       .filterNot {
         move =>
             DecisionMaker(game.field, game.history.passes ++ move.passChain)
@@ -35,7 +35,7 @@ case class Player(name: String, direction: Direction) {
               .exists(_.isWinning)
       }
 
-    val r = if (n.nonEmpty) n.toList else possibilities
+    val r = (if (n.nonEmpty) n.toList else possibilities).sortBy(_.passChain.length)
     if (n.isEmpty)
       println("opponent always wins")
     println(s"possible moves: ${r.length}, winning: ${r.count(_.isWinning)}, losing: ${r.count(_.isLosing)}")
@@ -46,7 +46,7 @@ case class Player(name: String, direction: Direction) {
     }
   }
 
-  def predictPassResult(pass: PassChain, game: Game) = {
+  def predictPassResult(pass: Passes, game: Game) = {
     if (isWinningPass(pass, game)) {
       Win
     } else if (isLosingPass(pass, game)) {
@@ -56,11 +56,11 @@ case class Player(name: String, direction: Direction) {
     }
   }
 
-  def isWinningPass(pass: PassChain, game: Game) = {
+  def isWinningPass(pass: Passes, game: Game) = {
     game.field.isWinningPass(pass.last)
   }
 
-  def isLosingPass(pass: PassChain, game: Game) = {
+  def isLosingPass(pass: Passes, game: Game) = {
     game.field.isLosingPass(pass.last) || DecisionMaker(game.field, game.history.passes ++ pass).possibleBeginnings.isEmpty
   }
 }

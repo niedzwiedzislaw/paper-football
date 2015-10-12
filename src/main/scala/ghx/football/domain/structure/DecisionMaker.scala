@@ -6,7 +6,7 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Future, Await}
 import scala.concurrent.ExecutionContext.Implicits.global
 
-case class DecisionMaker(field: Field, previousPasses: PassChain) {
+case class DecisionMaker(field: Field, previousPasses: Passes) {
 
   private def lastLocation = previousPasses.map(_.to).lastOption.getOrElse(Rules.startingLocation)
 
@@ -24,7 +24,7 @@ case class DecisionMaker(field: Field, previousPasses: PassChain) {
     theoreticalPasses.filterNot(previousPasses.contains).filter(field.isPassCorrect)
   }
 
-  private def possibleContinuations(pass: Pass): Seq[PassChain] = {
+  private def possibleContinuations(pass: Pass): Seq[Passes] = {
     if (locations.contains(pass.to) || field.canContinuePassing(pass)) {
       for {
         possibleContinuation <- (this + pass).possibleMoves
@@ -34,7 +34,7 @@ case class DecisionMaker(field: Field, previousPasses: PassChain) {
     }
   }
 
-  def possibleMoves: Seq[PassChain] = {
+  def possibleMoves: Seq[Passes] = {
     Await.result(Future{
       for {
         pass <- possibleBeginnings
